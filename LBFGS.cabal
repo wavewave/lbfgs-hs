@@ -1,0 +1,13 @@
+Name:		LBFGS
+Version:	0.0.1
+Copyright:	Daniël de Kok
+Maintainer:	Daniël de Kok <me@danieldk.eu>
+Author:		Daniël de Kok <me@danieldk.eu>
+Build-Type:	Simple
+Cabal-Version:	>= 1.4.0
+
+Library
+  Build-Depends:	base >= 4
+  Exposed-modules:	Numeric.LBFGS.Raw
+  Include-Dirs:		cbits
+  C-Sources:		cbits/lbfgs.c
