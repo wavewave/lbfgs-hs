@@ -1,14 +1,15 @@
-module Numeric.LBFGS (LineSearchAlgorithm(..)) where
+module Numeric.LBFGS (LineSearchAlgorithm(..), lbfgs) where
 
 import Foreign.C.Types (CDouble, CInt)
-import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr, plusPtr)
+import Foreign.Marshal.Alloc (malloc, free)
+import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr, nullPtr, plusPtr)
 import Foreign.Storable (peek, poke, sizeOf)
 
 import Numeric.LBFGS.Raw as R
 import Numeric.LBFGS.Raw (CLBFGSParameter(..), CLineSearchAlgorithm(..),
                          c_lbfgs_malloc, c_lbfgs_free)
 
-data LineSearchAlgorithm = DefaultLS
+data LineSearchAlgorithm = DefaultLineSearch
                          | MoreThuente
                          | BacktrackingArmijo
                          | Backtracking
@@ -17,7 +18,7 @@ data LineSearchAlgorithm = DefaultLS
 
 mergeLineSearchAlgorithm :: CLBFGSParameter -> LineSearchAlgorithm ->
                             CLBFGSParameter
-mergeLineSearchAlgorithm p DefaultLS =
+mergeLineSearchAlgorithm p DefaultLineSearch =
     p {R.linesearch = R.defaultLineSearch}
 mergeLineSearchAlgorithm p MoreThuente =
     p { R.linesearch = R.moreThuente }
@@ -41,12 +42,16 @@ cDoublePlusPtr ptr n = plusPtr ptr (n * sizeOf (undefined :: CDouble))
 listToVector :: [Double] -> IO (CInt, Ptr CDouble)
 listToVector l = do
   v <- c_lbfgs_malloc n
+  copyList l v
   return (n, v)
     where n = fromIntegral . length $ l
-          copyList [] _ = return ()
-          copylist (x:xs) p = do
-                   poke p $ realToFrac x
-                   copyList xs (cDoublePlusPtr p 1)
+
+copyList :: [Double] -> Ptr CDouble -> IO ()
+copyList [] _ = return ()
+copyList l p = do
+  poke p $ realToFrac $ head l
+  copyList (tail l) (cDoublePlusPtr p 1)
+
 
 freeVector :: Ptr CDouble -> IO ()
 freeVector = c_lbfgs_free
@@ -61,4 +66,18 @@ vectorToList_ pStart pCur l
   cval <- peek pCur
   let val = realToFrac cval
   vectorToList_ pStart (cDoublePlusPtr pCur (-1)) (val:l)
-    |otherwise = return l
+    | otherwise = return l
+
+lbfgs :: LineSearchAlgorithm -> EvaluateFun a -> ProgressFun a ->
+         [Double] -> IO([Double])
+lbfgs ls evalFun progressFun p = do
+  (n, pVec) <- listToVector p
+  let param = withParam ls
+  paramP <- malloc
+  poke paramP param
+  evalW <- lbfgs_evaluate_t_wrap evalFun
+  progressW <- lbfgs_progress_t_wrap progressFun
+  r <- c_lbfgs n pVec nullPtr evalW progressW nullPtr paramP
+  free paramP
+  freeVector pVec
+  vectorToList n pVec

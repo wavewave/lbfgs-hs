@@ -5,6 +5,7 @@
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 module Numeric.LBFGS.Raw (CLineSearchAlgorithm(..), CLBFGSParameter(..),
+                          EvaluateFun, ProgressFun,
                           defaultCParam, c_lbfgs, c_lbfgs_malloc,
                           c_lbfgs_free, lbfgs_evaluate_t_wrap,
                           lbfgs_progress_t_wrap,
