@@ -78,6 +78,8 @@ lbfgs ls evalFun progressFun p = do
   evalW <- lbfgs_evaluate_t_wrap evalFun
   progressW <- lbfgs_progress_t_wrap progressFun
   r <- c_lbfgs n pVec nullPtr evalW progressW nullPtr paramP
+  freeHaskellFunPtr progressW
+  freeHaskellFunPtr evalW
   free paramP
   freeVector pVec
   vectorToList n pVec
