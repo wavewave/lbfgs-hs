@@ -5,10 +5,10 @@
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 module Numeric.LBFGS.Raw (CLineSearchAlgorithm(..), CLBFGSParameter(..),
-                          EvaluateFun, ProgressFun,
+                          CEvaluateFun, CProgressFun,
                           defaultCParam, c_lbfgs, c_lbfgs_malloc,
-                          c_lbfgs_free, lbfgs_evaluate_t_wrap,
-                          lbfgs_progress_t_wrap,
+                          c_lbfgs_free, c_lbfgs_evaluate_t_wrap,
+                          c_lbfgs_progress_t_wrap,
 
                           defaultLineSearch, moreThuente, backtrackingArmijo,
                           backtracking, backtrackingWolfe,
@@ -102,22 +102,22 @@ instance Storable CLBFGSParameter where
       (#poke lbfgs_parameter_t, orthantwise_start) ptr orthantwise_start
       (#poke lbfgs_parameter_t, orthantwise_end) ptr orthantwise_end
 
-type EvaluateFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CInt ->
+type CEvaluateFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CInt ->
                       CDouble -> IO (CDouble))
 
-type ProgressFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CDouble ->
+type CProgressFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CDouble ->
                       CDouble -> CDouble -> CDouble -> CInt -> CInt ->
                       CInt -> IO (CInt))
 
 foreign import ccall "wrapper"
-        lbfgs_evaluate_t_wrap :: EvaluateFun a -> IO (FunPtr (EvaluateFun a))
+        c_lbfgs_evaluate_t_wrap :: CEvaluateFun a -> IO (FunPtr (CEvaluateFun a))
 
 foreign import ccall "wrapper"
-        lbfgs_progress_t_wrap :: ProgressFun a -> IO (FunPtr (ProgressFun a))
+        c_lbfgs_progress_t_wrap :: CProgressFun a -> IO (FunPtr (CProgressFun a))
 
 foreign import ccall safe "lbfgs.h lbfgs" c_lbfgs ::
-    CInt -> Ptr CDouble -> Ptr CDouble -> FunPtr (EvaluateFun a) ->
-    FunPtr (ProgressFun a) -> Ptr a -> Ptr (CLBFGSParameter) -> IO (CInt)
+    CInt -> Ptr CDouble -> Ptr CDouble -> FunPtr (CEvaluateFun a) ->
+    FunPtr (CProgressFun a) -> Ptr a -> Ptr (CLBFGSParameter) -> IO (CInt)
 
 foreign import ccall unsafe "lbfgs.h lbfgs_malloc" c_lbfgs_malloc ::
     CInt -> IO (Ptr CDouble)

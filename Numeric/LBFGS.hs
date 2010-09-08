@@ -5,9 +5,13 @@ import Foreign.Marshal.Alloc (malloc, free)
 import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr, nullPtr, plusPtr)
 import Foreign.Storable (peek, poke, sizeOf)
 
-import Numeric.LBFGS.Raw as R
-import Numeric.LBFGS.Raw (CLBFGSParameter(..), CLineSearchAlgorithm(..),
-                         c_lbfgs_malloc, c_lbfgs_free)
+import qualified Numeric.LBFGS.Raw as R
+import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
+                          CLineSearchAlgorithm(..), defaultCParam,
+                          c_lbfgs_malloc, c_lbfgs_free,
+                          c_lbfgs_evaluate_t_wrap, c_lbfgs_progress_t_wrap,
+                          c_lbfgs
+                         )
 
 data LineSearchAlgorithm = DefaultLineSearch
                          | MoreThuente
@@ -68,15 +72,15 @@ vectorToList_ pStart pCur l
   vectorToList_ pStart (cDoublePlusPtr pCur (-1)) (val:l)
     | otherwise = return l
 
-lbfgs :: LineSearchAlgorithm -> EvaluateFun a -> ProgressFun a ->
+lbfgs :: LineSearchAlgorithm -> CEvaluateFun a -> CProgressFun a ->
          [Double] -> IO([Double])
 lbfgs ls evalFun progressFun p = do
   (n, pVec) <- listToVector p
   let param = withParam ls
   paramP <- malloc
   poke paramP param
-  evalW <- lbfgs_evaluate_t_wrap evalFun
-  progressW <- lbfgs_progress_t_wrap progressFun
+  evalW <- c_lbfgs_evaluate_t_wrap evalFun
+  progressW <- c_lbfgs_progress_t_wrap progressFun
   r <- c_lbfgs n pVec nullPtr evalW progressW nullPtr paramP
   freeHaskellFunPtr progressW
   freeHaskellFunPtr evalW
