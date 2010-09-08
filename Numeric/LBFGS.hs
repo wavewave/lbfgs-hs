@@ -2,7 +2,7 @@ module Numeric.LBFGS (LineSearchAlgorithm(..)) where
 
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr, plusPtr)
-import Foreign.Storable (poke, sizeOf)
+import Foreign.Storable (peek, poke, sizeOf)
 
 import Numeric.LBFGS.Raw as R
 import Numeric.LBFGS.Raw (CLBFGSParameter(..), CLineSearchAlgorithm(..),
@@ -47,3 +47,18 @@ listToVector l = do
           copylist (x:xs) p = do
                    poke p $ realToFrac x
                    copyList xs (cDoublePlusPtr p 1)
+
+freeVector :: Ptr CDouble -> IO ()
+freeVector = c_lbfgs_free
+
+vectorToList :: CInt -> Ptr CDouble -> IO ([Double])
+vectorToList cn p = vectorToList_ p (cDoublePlusPtr p n) []
+    where n = fromIntegral cn
+
+vectorToList_ :: Ptr CDouble -> Ptr CDouble -> [Double] -> IO ([Double])
+vectorToList_ pStart pCur l
+    | pCur >= pStart = do
+  cval <- peek pCur
+  let val = realToFrac cval
+  vectorToList_ pStart (cDoublePlusPtr pCur (-1)) (val:l)
+    |otherwise = return l
