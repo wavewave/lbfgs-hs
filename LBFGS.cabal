@@ -7,7 +7,7 @@ Build-Type:	Simple
 Cabal-Version:	>= 1.4.0
 
 Library
-  Build-Depends:	base >= 4
+  Build-Depends:	base >= 4, array >= 0.3.0.0
   Exposed-modules:	Numeric.LBFGS.Raw, Numeric.LBFGS
   Include-Dirs:		cbits
   C-Sources:		cbits/lbfgs.c
