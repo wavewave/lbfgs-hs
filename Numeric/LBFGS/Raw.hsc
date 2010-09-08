@@ -94,7 +94,7 @@ foreign import ccall "wrapper"
 foreign import ccall "wrapper"
         lbfgs_progress_t_wrap :: ProgressFun a -> IO (FunPtr (ProgressFun a))
 
-foreign import ccall unsafe "lbfgs.h lbfgs" c_lbfgs ::
+foreign import ccall safe "lbfgs.h lbfgs" c_lbfgs ::
     CInt -> Ptr CDouble -> Ptr CDouble -> FunPtr (EvaluateFun a) ->
     FunPtr (ProgressFun a) -> Ptr a -> Ptr (CLBFGSParameter) -> IO (CInt)
 
