@@ -1,7 +1,12 @@
 module Numeric.LBFGS (LineSearchAlgorithm(..)) where
 
+import Foreign.C.Types (CDouble, CInt)
+import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr, plusPtr)
+import Foreign.Storable (poke, sizeOf)
+
 import Numeric.LBFGS.Raw as R
-import Numeric.LBFGS.Raw (CLBFGSParameter(..), CLineSearchAlgorithm(..))
+import Numeric.LBFGS.Raw (CLBFGSParameter(..), CLineSearchAlgorithm(..),
+                         c_lbfgs_malloc, c_lbfgs_free)
 
 data LineSearchAlgorithm = DefaultLS
                          | MoreThuente
@@ -27,3 +32,18 @@ mergeLineSearchAlgorithm p (BacktrackingStrongWolfe coeff) =
     p { R.linesearch = R.backtrackingStrongWolfe,
         R.wolfe      = realToFrac coeff }
 
+withParam :: LineSearchAlgorithm -> CLBFGSParameter
+withParam lineSearch =
+    mergeLineSearchAlgorithm defaultCParam lineSearch
+
+cDoublePlusPtr ptr n = plusPtr ptr (n * sizeOf (undefined :: CDouble))
+
+listToVector :: [Double] -> IO (CInt, Ptr CDouble)
+listToVector l = do
+  v <- c_lbfgs_malloc n
+  return (n, v)
+    where n = fromIntegral . length $ l
+          copyList [] _ = return ()
+          copylist (x:xs) p = do
+                   poke p $ realToFrac x
+                   copyList xs (cDoublePlusPtr p 1)
