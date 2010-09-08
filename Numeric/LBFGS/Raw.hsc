@@ -6,11 +6,24 @@
 
 module Numeric.LBFGS.Raw (EvaluateFun(..), defaultCParam, c_lbfgs,
                           c_lbfgs_malloc, c_lbfgs_free, lbfgs_evaluate_t_wrap,
-                          lbfgs_progress_t_wrap) where
+                          lbfgs_progress_t_wrap, moreThuente) where
 
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr)
+
+newtype CLineSearchAlgorithm =
+    CLineSearchAlgorithm { unCLineSearchAlgorithm :: CInt }
+    deriving (Storable, Show)
+
+#{enum CLineSearchAlgorithm, CLineSearchAlgorithm,
+  defaultLineSearch = LBFGS_LINESEARCH_DEFAULT,
+  moreThuente = LBFGS_LINESEARCH_MORETHUENTE,
+  backtrackingArmijo = LBFGS_LINESEARCH_BACKTRACKING_ARMIJO,
+  backtracking = LBFGS_LINESEARCH_BACKTRACKING,
+  backtrackingWolfe = LBFGS_LINESEARCH_BACKTRACKING_WOLFE,
+  backtrackingStrongWolfe = LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE
+}
 
 data CLBFGSParameter = CLBFGSParameter {
       m :: CInt,
@@ -18,7 +31,7 @@ data CLBFGSParameter = CLBFGSParameter {
       past :: CInt,
       delta :: CDouble,
       max_iterations :: CInt,
-      linesearch :: CInt,
+      linesearch :: CLineSearchAlgorithm,
       max_linesearch :: CInt,
       min_step :: CDouble,
       max_step :: CDouble,
@@ -31,8 +44,8 @@ data CLBFGSParameter = CLBFGSParameter {
       orthantwise_end :: CDouble
 } deriving Show
 
-defaultCParam = CLBFGSParameter 6 1e-5 0 1e-5 0 0 40 1e-20 1e20 1e-4
-                0.9 0.9 1.0e-16 0.0 0.0 (-1.0)
+defaultCParam = CLBFGSParameter 6 1e-5 0 1e-5 0 defaultLineSearch 40 1e-20
+                1e20 1e-4 0.9 0.9 1.0e-16 0.0 0.0 (-1.0)
 
 
 instance Storable CLBFGSParameter where
