@@ -4,7 +4,8 @@
 #include "lbfgs.h"
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
-module Numeric.LBFGS.Raw where
+module Numeric.LBFGS.Raw (EvaluateFun(..), defaultCParam, c_lbfgs, c_lbfgs_malloc,
+                          c_lbfgs_free, lbfgs_evaluate_t_wrap) where
 
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble, CInt)
@@ -79,8 +80,12 @@ instance Storable CLBFGSParameter where
       (#poke lbfgs_parameter_t, orthantwise_start) ptr orthantwise_start
       (#poke lbfgs_parameter_t, orthantwise_end) ptr orthantwise_end
 
-type EvaluateFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CInt -> CDouble -> Ptr CDouble)
-type ProgressFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CDouble -> CDouble -> CDouble -> CDouble -> CInt -> CInt -> CInt -> Ptr CInt)
+type EvaluateFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CInt ->
+                      CDouble -> IO (CDouble))
+
+type ProgressFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CDouble ->
+                      CDouble -> CDouble -> CDouble -> CInt -> CInt ->
+                      CInt -> IO (CInt))
 
 foreign import ccall "wrapper"
         lbfgs_evaluate_t_wrap :: EvaluateFun a -> IO (FunPtr (EvaluateFun a))
@@ -89,7 +94,8 @@ foreign import ccall "wrapper"
         lbfgs_progress_t_wrap :: ProgressFun a -> IO (FunPtr (ProgressFun a))
 
 foreign import ccall unsafe "lbfgs.h lbfgs" c_lbfgs ::
-    CInt -> Ptr CDouble -> Ptr CDouble -> FunPtr (EvaluateFun a) -> FunPtr (ProgressFun a) -> Ptr a -> Ptr (CLBFGSParameter) -> IO (CInt)
+    CInt -> Ptr CDouble -> Ptr CDouble -> FunPtr (EvaluateFun a) ->
+    FunPtr (ProgressFun a) -> Ptr a -> Ptr (CLBFGSParameter) -> IO (CInt)
 
 foreign import ccall unsafe "lbfgs.h lbfgs_malloc" c_lbfgs_malloc ::
     CInt -> IO (Ptr CDouble)
