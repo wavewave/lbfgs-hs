@@ -176,7 +176,8 @@ vectorToList_ pStart pCur l
 -- Type signature for the objective function and gradient evaluations.
 type EvaluateFun a =
     a                            -- ^ Instance data
-    -> StorableArray Int CDouble -- ^ Current variables
+    -> StorableArray Int CDouble -- ^ Current variables (should not be
+                                 --   modified by the function)
     -> StorableArray Int CDouble -- ^ Gradients
     -> CInt                      -- ^ Number of variables
     -> CDouble                   -- ^ Step of the line search algorithm
@@ -198,8 +199,10 @@ wrapEvaluateFun fun inst x g n step = do
 -- optimization.
 type ProgressFun a =
     a                            -- ^ Instance data
-    -> StorableArray Int CDouble -- ^ Variables
-    -> StorableArray Int CDouble -- ^ Gradients
+    -> StorableArray Int CDouble -- ^ Variables (should not be modified
+                                 --   by the function)
+    -> StorableArray Int CDouble -- ^ Gradients (should not be modified
+                                 --   by the function)
     -> CDouble                   -- ^ Value of the objective function
     -> CDouble                   -- ^ Euclidean norm of the variables
     -> CDouble                   -- ^ Eucledian norm of the gradients
