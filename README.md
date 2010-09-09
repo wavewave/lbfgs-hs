@@ -1,6 +1,5 @@
-**Warning:** This module is currently unusable! I just prefer using version
-management while developing. Once a usable version is ready, I will submit
-it to Hackage.
+**Warning:** This module is still under heavy development! The interface
+will change a lot, and not all parameters can be set (yet).
 
 ## Introduction
 
