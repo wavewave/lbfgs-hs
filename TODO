@@ -1,2 +1,3 @@
 - Make variables read-only in the evaluation function.
 - Make variables and gradients read-ony in the progress function.
+- Tests, tests, tests
