@@ -17,17 +17,17 @@
 module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
                       ProgressFun, lbfgs) where
 
-import Data.Array.Storable (StorableArray(..),
+import Data.Array.Storable (StorableArray,
                             unsafeForeignPtrToStorableArray)
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.ForeignPtr (newForeignPtr_)
 import Foreign.Marshal.Alloc (malloc, free)
-import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr, nullPtr, plusPtr)
+import Foreign.Ptr (Ptr, freeHaskellFunPtr, nullPtr, plusPtr)
 import Foreign.Storable (Storable(..), peek, poke, sizeOf)
 
 import qualified Numeric.LBFGS.Raw as R
 import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
-                          CLineSearchAlgorithm(..), defaultCParam,
+                          defaultCParam,
                           c_lbfgs_malloc, c_lbfgs_free,
                           c_lbfgs_evaluate_t_wrap, c_lbfgs_progress_t_wrap,
                           c_lbfgs
@@ -53,17 +53,18 @@ mergeLineSearchAlgorithm p BacktrackingArmijo =
     p { R.linesearch = R.backtrackingArmijo }
 mergeLineSearchAlgorithm p Backtracking =
     p { R.linesearch = R.backtracking }
-mergeLineSearchAlgorithm p (BacktrackingWolfe coeff) =
+mergeLineSearchAlgorithm p (BacktrackingWolfe c) =
     p { R.linesearch = R.backtrackingWolfe,
-        R.wolfe      = realToFrac coeff }
-mergeLineSearchAlgorithm p (BacktrackingStrongWolfe coeff) =
+        R.wolfe      = realToFrac c }
+mergeLineSearchAlgorithm p (BacktrackingStrongWolfe c) =
     p { R.linesearch = R.backtrackingStrongWolfe,
-        R.wolfe      = realToFrac coeff }
+        R.wolfe      = realToFrac c }
 
 withParam :: LineSearchAlgorithm -> CLBFGSParameter
 withParam lineSearch =
     mergeLineSearchAlgorithm defaultCParam lineSearch
 
+cDoublePlusPtr :: Ptr CDouble -> Int -> Ptr CDouble
 cDoublePlusPtr ptr n = plusPtr ptr (n * sizeOf (undefined :: CDouble))
 
 listToVector :: [Double] -> IO (CInt, Ptr CDouble)
@@ -170,7 +171,7 @@ lbfgs_ ls evalFun progressFun inst p = do
   poke paramP param
   evalW <- c_lbfgs_evaluate_t_wrap evalFun
   progressW <- c_lbfgs_progress_t_wrap progressFun
-  r <- c_lbfgs n pVec nullPtr evalW progressW instP paramP
+  _ <- c_lbfgs n pVec nullPtr evalW progressW instP paramP
   freeHaskellFunPtr progressW
   freeHaskellFunPtr evalW
   free paramP

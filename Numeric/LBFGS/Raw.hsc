@@ -1,5 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, GeneralizedNewtypeDeriving, 
-  EmptyDataDecls #-}
+{-# LANGUAGE ForeignFunctionInterface, GeneralizedNewtypeDeriving #-}
 
 #include "lbfgs.h"
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
@@ -18,7 +17,7 @@ module Numeric.LBFGS.Raw (CLineSearchAlgorithm(..), CLBFGSParameter(..),
 
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble, CInt)
-import Foreign.Ptr (FunPtr, Ptr, freeHaskellFunPtr)
+import Foreign.Ptr (FunPtr, Ptr)
 
 newtype CLineSearchAlgorithm =
     CLineSearchAlgorithm { unCLineSearchAlgorithm :: CInt }
@@ -52,9 +51,9 @@ data CLBFGSParameter = CLBFGSParameter {
       orthantwise_end :: CDouble
 } deriving Show
 
+defaultCParam :: CLBFGSParameter
 defaultCParam = CLBFGSParameter 6 1e-5 0 1e-5 0 defaultLineSearch 40 1e-20
                 1e20 1e-4 0.9 0.9 1.0e-16 0.0 0.0 (-1.0)
-
 
 instance Storable CLBFGSParameter where
     sizeOf _ = #{size lbfgs_parameter_t}
