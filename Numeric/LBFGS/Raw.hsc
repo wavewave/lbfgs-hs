@@ -3,7 +3,7 @@
 #include "lbfgs.h"
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
-module Numeric.LBFGS.Raw (CLineSearchAlgorithm(..), CLBFGSParameter(..),
+module Numeric.LBFGS.Raw (CLineSearchAlgorithm, CLBFGSParameter(..),
                           CEvaluateFun, CProgressFun,
                           defaultCParam, c_lbfgs, c_lbfgs_malloc,
                           c_lbfgs_free, c_lbfgs_evaluate_t_wrap,
@@ -11,7 +11,44 @@ module Numeric.LBFGS.Raw (CLineSearchAlgorithm(..), CLBFGSParameter(..),
 
                           defaultLineSearch, moreThuente, backtrackingArmijo,
                           backtracking, backtrackingWolfe,
-                          backtrackingStrongWolfe
+                          backtrackingStrongWolfe,
+
+                          CLBFGSResult(..),
+                          lbfgsSuccess,
+                          lbfgsConvergence,
+                          lbfgsStop,
+                          lbfgsAlreadyMinimized,
+                          lbfgserrUnknownerror,
+                          lbfgserrLogicerror,
+                          lbfgserrOutofmemory,
+                          lbfgserrCanceled,
+                          lbfgserrInvalidN,
+                          lbfgserrInvalidNSse,
+                          lbfgserrInvalidXSse,
+                          lbfgserrInvalidEpsilon,
+                          lbfgserrInvalidTestperiod,
+                          lbfgserrInvalidDelta,
+                          lbfgserrInvalidLinesearch,
+                          lbfgserrInvalidMinstep,
+                          lbfgserrInvalidMaxstep,
+                          lbfgserrInvalidFtol,
+                          lbfgserrInvalidWolfe,
+                          lbfgserrInvalidGtol,
+                          lbfgserrInvalidXtol,
+                          lbfgserrInvalidMaxlinesearch,
+                          lbfgserrInvalidOrthantwise,
+                          lbfgserrInvalidOrthantwiseStart,
+                          lbfgserrInvalidOrthantwiseEnd,
+                          lbfgserrOutofinterval,
+                          lbfgserrIncorrectTminmax,
+                          lbfgserrRoundingError,
+                          lbfgserrMinimumstep,
+                          lbfgserrMaximumstep,
+                          lbfgserrMaximumlinesearch,
+                          lbfgserrMaximumiteration,
+                          lbfgserrWidthtoosmall,
+                          lbfgserrInvalidparameters,
+                          lbfgserrIncreasegradient
 
 ) where
 
@@ -31,6 +68,29 @@ newtype CLineSearchAlgorithm =
   backtrackingWolfe = LBFGS_LINESEARCH_BACKTRACKING_WOLFE,
   backtrackingStrongWolfe = LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE
 }
+
+newtype CLBFGSResult =
+    CLBFGSResult { unCLBFGSResult :: CInt }
+    deriving (Eq, Show)
+
+#{enum CLBFGSResult, CLBFGSResult,
+  LBFGS_SUCCESS, LBFGS_CONVERGENCE, LBFGS_STOP,
+  LBFGS_ALREADY_MINIMIZED, LBFGSERR_UNKNOWNERROR, LBFGSERR_LOGICERROR,
+  LBFGSERR_OUTOFMEMORY, LBFGSERR_CANCELED, LBFGSERR_INVALID_N,
+  LBFGSERR_INVALID_N_SSE, LBFGSERR_INVALID_X_SSE,
+  LBFGSERR_INVALID_EPSILON, LBFGSERR_INVALID_TESTPERIOD,
+  LBFGSERR_INVALID_DELTA, LBFGSERR_INVALID_LINESEARCH,
+  LBFGSERR_INVALID_MINSTEP, LBFGSERR_INVALID_MAXSTEP,
+  LBFGSERR_INVALID_FTOL, LBFGSERR_INVALID_WOLFE,
+  LBFGSERR_INVALID_GTOL, LBFGSERR_INVALID_XTOL,
+  LBFGSERR_INVALID_MAXLINESEARCH, LBFGSERR_INVALID_ORTHANTWISE,
+  LBFGSERR_INVALID_ORTHANTWISE_START,
+  LBFGSERR_INVALID_ORTHANTWISE_END, LBFGSERR_OUTOFINTERVAL,
+  LBFGSERR_INCORRECT_TMINMAX, LBFGSERR_ROUNDING_ERROR,
+  LBFGSERR_MINIMUMSTEP, LBFGSERR_MAXIMUMSTEP,
+  LBFGSERR_MAXIMUMLINESEARCH, LBFGSERR_MAXIMUMITERATION,
+  LBFGSERR_WIDTHTOOSMALL, LBFGSERR_INVALIDPARAMETERS,
+  LBFGSERR_INCREASEGRADIENT }
 
 data CLBFGSParameter = CLBFGSParameter {
       m :: CInt,

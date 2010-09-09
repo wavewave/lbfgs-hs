@@ -11,11 +11,11 @@
 -- Broyden-Fletcher-Goldfarb-Shanno (L-BFGS) method for solving
 -- unconstrained minimization problems. The original C library is
 -- available from:
--- 
+--
 -- <http://www.chokkan.org/software/liblbfgs/>
 
 module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
-                      ProgressFun, lbfgs) where
+                      ProgressFun, LBFGSResult, lbfgs) where
 
 import Data.Array.Storable (StorableArray,
                             unsafeForeignPtrToStorableArray)
@@ -27,7 +27,7 @@ import Foreign.Storable (Storable(..), peek, poke, sizeOf)
 
 import qualified Numeric.LBFGS.Raw as R
 import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
-                          defaultCParam,
+                          defaultCParam, CLBFGSResult(..),
                           c_lbfgs_malloc, c_lbfgs_free,
                           c_lbfgs_evaluate_t_wrap, c_lbfgs_progress_t_wrap,
                           c_lbfgs
@@ -63,6 +63,81 @@ mergeLineSearchAlgorithm p (BacktrackingStrongWolfe c) =
 withParam :: LineSearchAlgorithm -> CLBFGSParameter
 withParam lineSearch =
     mergeLineSearchAlgorithm defaultCParam lineSearch
+
+
+data LBFGSResult
+    = Success
+    | Stop
+    | AlreadyMinimized
+    | UnknownError
+    | LogicError
+    | OutOfMemory
+    | Canceled
+    | InvalidN
+    | InvalidNSSE
+    | InvalidXSSE
+    | InvalidEpsilon
+    | InvalidTestPeriod
+    | InvalidDelta
+    | InvalidLineSearch
+    | InvalidMinStep
+    | InvalidMaxStep
+    | InvalidFtol
+    | InvalidWolfe
+    | InvalidGtol
+    | InvalidXtol
+    | InvalidMaxLineSearch
+    | InvalidOrthantwise
+    | InvalidOrthantwiseStart
+    | InvalidOrthantwiseEnd
+    | OutOfInterval
+    | IncorrectTMinMax
+    | RoundingError
+    | MinimumStep
+    | MaximumStep
+    | MaximumLineSearch
+    | MaximumIteration
+    | WidthTooSmall
+    | InvalidParameters
+    | IncreaseGradient
+    deriving (Eq, Show)
+
+deriveResult :: CLBFGSResult -> LBFGSResult
+deriveResult r
+    | r == R.lbfgsSuccess = Success
+    | r == R.lbfgsStop = Stop
+    | r == R.lbfgsAlreadyMinimized = AlreadyMinimized
+    | r == R.lbfgserrUnknownerror = UnknownError
+    | r == R.lbfgserrLogicerror = LogicError
+    | r == R.lbfgserrOutofmemory = OutOfMemory
+    | r == R.lbfgserrCanceled = Canceled
+    | r == R.lbfgserrInvalidN = InvalidN
+    | r == R.lbfgserrInvalidNSse = InvalidNSSE
+    | r == R.lbfgserrInvalidXSse = InvalidXSSE
+    | r == R.lbfgserrInvalidEpsilon = InvalidEpsilon
+    | r == R.lbfgserrInvalidTestperiod = InvalidTestPeriod
+    | r == R.lbfgserrInvalidDelta = InvalidDelta
+    | r == R.lbfgserrInvalidLinesearch = InvalidLineSearch
+    | r == R.lbfgserrInvalidMinstep = InvalidMinStep
+    | r == R.lbfgserrInvalidMaxstep = InvalidMaxStep
+    | r == R.lbfgserrInvalidFtol = InvalidFtol
+    | r == R.lbfgserrInvalidWolfe = InvalidWolfe
+    | r == R.lbfgserrInvalidGtol = InvalidGtol
+    | r == R.lbfgserrInvalidXtol = InvalidXtol
+    | r == R.lbfgserrInvalidMaxlinesearch = InvalidMaxLineSearch
+    | r == R.lbfgserrInvalidOrthantwise = InvalidOrthantwise
+    | r == R.lbfgserrInvalidOrthantwiseStart = InvalidOrthantwiseStart
+    | r == R.lbfgserrInvalidOrthantwiseEnd = InvalidOrthantwiseEnd
+    | r == R.lbfgserrOutofinterval = OutOfInterval
+    | r == R.lbfgserrIncorrectTminmax = IncorrectTMinMax
+    | r == R.lbfgserrRoundingError = RoundingError
+    | r == R.lbfgserrMinimumstep = MinimumStep
+    | r == R.lbfgserrMaximumstep = MaximumStep
+    | r == R.lbfgserrMaximumlinesearch = MaximumLineSearch
+    | r == R.lbfgserrMaximumiteration = MaximumIteration
+    | r == R.lbfgserrWidthtoosmall = WidthTooSmall
+    | r == R.lbfgserrInvalidparameters = InvalidParameters
+    | r == R.lbfgserrIncreasegradient = IncreaseGradient
 
 cDoublePlusPtr :: Ptr CDouble -> Int -> Ptr CDouble
 cDoublePlusPtr ptr n = plusPtr ptr (n * sizeOf (undefined :: CDouble))
@@ -151,17 +226,17 @@ wrapProgressFun fun inst x g fx xn gn step n k ls = do
 -- Start a L-BFGS optimization. The initial variables should be
 -- provided as a list of doubles.
 lbfgs :: (Storable a) =>
-         LineSearchAlgorithm -- ^ The line search algorithm
-      -> EvaluateFun a       -- ^ Objective function
-      -> ProgressFun a       -- ^ Progress report function
-      -> a                   -- ^ Instance data
-      -> [Double]            -- ^ Initial variable values
-      -> IO([Double])        -- ^ Variable values
+         LineSearchAlgorithm       -- ^ The line search algorithm
+      -> EvaluateFun a             -- ^ Objective function
+      -> ProgressFun a             -- ^ Progress report function
+      -> a                         -- ^ Instance data
+      -> [Double]                  -- ^ Initial variable values
+      -> IO(LBFGSResult, [Double]) -- ^ Result and variable values
 lbfgs ls evalFun progressFun inst p = lbfgs_ ls (wrapEvaluateFun evalFun)
                                  (wrapProgressFun progressFun) inst p
 
 lbfgs_ :: (Storable a) => LineSearchAlgorithm -> CEvaluateFun a ->
-          CProgressFun a -> a -> [Double] -> IO([Double])
+          CProgressFun a -> a -> [Double] -> IO(LBFGSResult, [Double])
 lbfgs_ ls evalFun progressFun inst p = do
   (n, pVec) <- listToVector p
   let param = withParam ls
@@ -171,10 +246,11 @@ lbfgs_ ls evalFun progressFun inst p = do
   poke paramP param
   evalW <- c_lbfgs_evaluate_t_wrap evalFun
   progressW <- c_lbfgs_progress_t_wrap progressFun
-  _ <- c_lbfgs n pVec nullPtr evalW progressW instP paramP
+  r <- c_lbfgs n pVec nullPtr evalW progressW instP paramP
   freeHaskellFunPtr progressW
   freeHaskellFunPtr evalW
   free paramP
   free instP
   freeVector pVec
-  vectorToList n pVec
+  rl <- vectorToList n pVec
+  return (deriveResult $ CLBFGSResult r, rl)
