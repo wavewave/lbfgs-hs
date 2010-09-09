@@ -1,3 +1,19 @@
+-- |
+-- Module      : Numeric.LBFGS
+-- Copyright   : (c) 2010 Daniël de Kok
+-- License     : Apache 2
+--
+--
+-- Maintainer  : Daniël de Kok <me@danieldk.eu>
+-- Stability   : experimental
+--
+-- Binding for the liblbfgs library, much implements the Limited-memory
+-- Broyden-Fletcher-Goldfarb-Shanno (L-BFGS) method for solving
+-- unconstrained minimization problems. The original C library is
+-- available from:
+-- 
+-- <http://www.chokkan.org/software/liblbfgs/>
+
 module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
                       ProgressFun, lbfgs) where
 
@@ -17,6 +33,9 @@ import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
                           c_lbfgs
                          )
 
+-- |
+-- Various line search algorithms. Wolfe backtracking algorithms require
+-- a coefficient.
 data LineSearchAlgorithm = DefaultLineSearch
                          | MoreThuente
                          | BacktrackingArmijo
@@ -77,8 +96,15 @@ vectorToList_ pStart pCur l
     | otherwise = return l
 
 
-type EvaluateFun a = (a -> StorableArray Int CDouble ->
-    StorableArray Int CDouble -> CInt -> CDouble -> IO (CDouble))
+-- |
+-- Type signature for the objective function and gradient evaluations.
+type EvaluateFun a =
+    a                            -- ^ Instance data
+    -> StorableArray Int CDouble -- ^ Current variables
+    -> StorableArray Int CDouble -- ^ Gradients
+    -> CInt                      -- ^ Number of variables
+    -> CDouble                   -- ^ Step of the line search algorithm
+    -> IO (CDouble)              -- ^ Value of the objective function
 
 wrapEvaluateFun :: (Storable a) => EvaluateFun a -> Ptr a -> Ptr CDouble ->
                    Ptr CDouble -> CInt -> CDouble -> IO (CDouble)
@@ -91,10 +117,22 @@ wrapEvaluateFun fun inst x g n step = do
   gArr <- unsafeForeignPtrToStorableArray gFp (0, nInt - 1)
   fun instV xArr gArr n step
 
-type ProgressFun a = (a -> StorableArray Int CDouble ->
-                      StorableArray Int CDouble -> CDouble ->
-                      CDouble -> CDouble -> CDouble -> CInt -> CInt ->
-                      CInt -> IO (CInt))
+-- |
+-- Type signature for a function reporting on the progress of the
+-- optimization.
+type ProgressFun a =
+    a                            -- ^ Instance data
+    -> StorableArray Int CDouble -- ^ Variables
+    -> StorableArray Int CDouble -- ^ Gradients
+    -> CDouble                   -- ^ Value of the objective function
+    -> CDouble                   -- ^ Euclidean norm of the variables
+    -> CDouble                   -- ^ Eucledian norm of the gradients
+    -> CDouble                   -- ^ Step of the line search algorithm
+    -> CInt                      -- ^ Number of variables
+    -> CInt                      -- ^ Iteration count
+    -> CInt                      -- ^ Number of evaluations for this iteration
+    -> IO (CInt)                 -- ^ Return zero to continue the evaluation,
+                                 --   non-zero otherwise
 
 wrapProgressFun :: (Storable a) => ProgressFun a -> Ptr a -> Ptr CDouble ->
                    Ptr CDouble-> CDouble -> CDouble -> CDouble -> CDouble ->
@@ -108,8 +146,16 @@ wrapProgressFun fun inst x g fx xn gn step n k ls = do
   gArr <- unsafeForeignPtrToStorableArray gFp (0, nInt - 1)
   fun instV xArr gArr fx xn gn step n k ls
 
-lbfgs :: (Storable a) => LineSearchAlgorithm -> EvaluateFun a ->
-         ProgressFun a -> a -> [Double] -> IO([Double])
+-- |
+-- Start a L-BFGS optimization. The initial variables should be
+-- provided as a list of doubles.
+lbfgs :: (Storable a) =>
+         LineSearchAlgorithm -- ^ The line search algorithm
+      -> EvaluateFun a       -- ^ Objective function
+      -> ProgressFun a       -- ^ Progress report function
+      -> a                   -- ^ Instance data
+      -> [Double]            -- ^ Initial variable values
+      -> IO([Double])        -- ^ Variable values
 lbfgs ls evalFun progressFun inst p = lbfgs_ ls (wrapEvaluateFun evalFun)
                                  (wrapProgressFun progressFun) inst p
 
