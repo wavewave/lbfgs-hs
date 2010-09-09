@@ -1,3 +1,2 @@
 - Make variables read-only in the evaluation function.
 - Make variables and gradients read-ony in the progress function.
-- Error reporting (c_lbfgs return values are currently ignored).
