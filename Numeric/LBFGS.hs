@@ -162,7 +162,7 @@ freeVector :: Ptr CDouble -> IO ()
 freeVector = c_lbfgs_free
 
 vectorToList :: CInt -> Ptr CDouble -> IO ([Double])
-vectorToList cn p = vectorToList_ p (cDoublePlusPtr p n) []
+vectorToList cn p = vectorToList_ p (cDoublePlusPtr p (n - 1)) []
     where n = fromIntegral cn
 
 vectorToList_ :: Ptr CDouble -> Ptr CDouble -> [Double] -> IO ([Double])
