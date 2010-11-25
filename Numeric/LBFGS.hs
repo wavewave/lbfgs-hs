@@ -245,7 +245,6 @@ lbfgs_ ls evalFun progressFun inst p = do
   (n, pVec) <- listToVector p
   let param = withParam ls
   instP <- newStablePtr inst
-  --poke instP inst
   paramP <- malloc
   poke paramP param
   evalW <- c_lbfgs_evaluate_t_wrap evalFun
@@ -254,7 +253,6 @@ lbfgs_ ls evalFun progressFun inst p = do
   freeHaskellFunPtr progressW
   freeHaskellFunPtr evalW
   free paramP
-  --free instP
   freeStablePtr instP
   freeVector pVec
   rl <- vectorToList n pVec
