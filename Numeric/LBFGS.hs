@@ -23,6 +23,8 @@ import Foreign.C.Types (CDouble, CInt)
 import Foreign.ForeignPtr (newForeignPtr_)
 import Foreign.Marshal.Alloc (malloc, free)
 import Foreign.Ptr (Ptr, freeHaskellFunPtr, nullPtr, plusPtr)
+import Foreign.StablePtr (StablePtr, deRefStablePtr, newStablePtr,
+                                   freeStablePtr)
 import Foreign.Storable (Storable(..), peek, poke, sizeOf)
 
 import qualified Numeric.LBFGS.Raw as R
@@ -183,11 +185,11 @@ type EvaluateFun a =
     -> CDouble                   -- ^ Step of the line search algorithm
     -> IO (CDouble)              -- ^ Value of the objective function
 
-wrapEvaluateFun :: (Storable a) => EvaluateFun a -> Ptr a -> Ptr CDouble ->
+wrapEvaluateFun :: EvaluateFun a -> StablePtr a -> Ptr CDouble ->
                    Ptr CDouble -> CInt -> CDouble -> IO (CDouble)
 wrapEvaluateFun fun inst x g n step = do
   let nInt = fromIntegral n
-  instV <- peek inst
+  instV <- deRefStablePtr inst
   xFp <- newForeignPtr_ x
   xArr <- unsafeForeignPtrToStorableArray xFp (0, nInt - 1)
   gFp <- newForeignPtr_ g
@@ -213,12 +215,12 @@ type ProgressFun a =
     -> IO (CInt)                 -- ^ Return zero to continue the evaluation,
                                  --   non-zero otherwise
 
-wrapProgressFun :: (Storable a) => ProgressFun a -> Ptr a -> Ptr CDouble ->
+wrapProgressFun :: ProgressFun a -> StablePtr a -> Ptr CDouble ->
                    Ptr CDouble-> CDouble -> CDouble -> CDouble -> CDouble ->
                    CInt -> CInt -> CInt -> IO (CInt)
 wrapProgressFun fun inst x g fx xn gn step n k ls = do
   let nInt = fromIntegral n
-  instV <- peek inst
+  instV <- deRefStablePtr inst
   xFp <- newForeignPtr_ x
   xArr <- unsafeForeignPtrToStorableArray xFp (0, nInt - 1)
   gFp <- newForeignPtr_ g
@@ -228,8 +230,7 @@ wrapProgressFun fun inst x g fx xn gn step n k ls = do
 -- |
 -- Start a L-BFGS optimization. The initial variables should be
 -- provided as a list of doubles.
-lbfgs :: (Storable a) =>
-         LineSearchAlgorithm       -- ^ The line search algorithm
+lbfgs :: LineSearchAlgorithm       -- ^ The line search algorithm
       -> EvaluateFun a             -- ^ Objective function
       -> ProgressFun a             -- ^ Progress report function
       -> a                         -- ^ Instance data
@@ -238,13 +239,13 @@ lbfgs :: (Storable a) =>
 lbfgs ls evalFun progressFun inst p = lbfgs_ ls (wrapEvaluateFun evalFun)
                                  (wrapProgressFun progressFun) inst p
 
-lbfgs_ :: (Storable a) => LineSearchAlgorithm -> CEvaluateFun a ->
-          CProgressFun a -> a -> [Double] -> IO(LBFGSResult, [Double])
+lbfgs_ :: LineSearchAlgorithm -> CEvaluateFun a -> CProgressFun a -> a ->
+          [Double] -> IO(LBFGSResult, [Double])
 lbfgs_ ls evalFun progressFun inst p = do
   (n, pVec) <- listToVector p
   let param = withParam ls
-  instP <- malloc
-  poke instP inst
+  instP <- newStablePtr inst
+  --poke instP inst
   paramP <- malloc
   poke paramP param
   evalW <- c_lbfgs_evaluate_t_wrap evalFun
@@ -253,7 +254,8 @@ lbfgs_ ls evalFun progressFun inst p = do
   freeHaskellFunPtr progressW
   freeHaskellFunPtr evalW
   free paramP
-  free instP
+  --free instP
+  freeStablePtr instP
   freeVector pVec
   rl <- vectorToList n pVec
   return (deriveResult $ CLBFGSResult r, rl)

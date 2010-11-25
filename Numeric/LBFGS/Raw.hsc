@@ -55,6 +55,7 @@ module Numeric.LBFGS.Raw (CLineSearchAlgorithm, CLBFGSParameter(..),
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.Ptr (FunPtr, Ptr)
+import Foreign.StablePtr (StablePtr)
 
 newtype CLineSearchAlgorithm =
     CLineSearchAlgorithm { unCLineSearchAlgorithm :: CInt }
@@ -161,10 +162,10 @@ instance Storable CLBFGSParameter where
       (#poke lbfgs_parameter_t, orthantwise_start) ptr orthantwise_start
       (#poke lbfgs_parameter_t, orthantwise_end) ptr orthantwise_end
 
-type CEvaluateFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CInt ->
+type CEvaluateFun a = (StablePtr a -> Ptr CDouble -> Ptr CDouble -> CInt ->
                       CDouble -> IO (CDouble))
 
-type CProgressFun a = (Ptr a -> Ptr CDouble -> Ptr CDouble -> CDouble ->
+type CProgressFun a = (StablePtr a -> Ptr CDouble -> Ptr CDouble -> CDouble ->
                       CDouble -> CDouble -> CDouble -> CInt -> CInt ->
                       CInt -> IO (CInt))
 
@@ -176,7 +177,7 @@ foreign import ccall "wrapper"
 
 foreign import ccall safe "lbfgs.h lbfgs" c_lbfgs ::
     CInt -> Ptr CDouble -> Ptr CDouble -> FunPtr (CEvaluateFun a) ->
-    FunPtr (CProgressFun a) -> Ptr a -> Ptr (CLBFGSParameter) -> IO (CInt)
+    FunPtr (CProgressFun a) -> StablePtr a -> Ptr (CLBFGSParameter) -> IO (CInt)
 
 foreign import ccall unsafe "lbfgs.h lbfgs_malloc" c_lbfgs_malloc ::
     CInt -> IO (Ptr CDouble)
