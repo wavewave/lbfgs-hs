@@ -48,4 +48,3 @@ main :: IO ()
 main = do
 	(r, _) <- test
         putStr $ "Result: " ++ (show r) ++ "\n"
-        return ()
