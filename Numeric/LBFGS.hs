@@ -15,7 +15,7 @@
 -- <http://www.chokkan.org/software/liblbfgs/>
 
 module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
-                      ProgressFun, LBFGSResult, lbfgs) where
+                      ProgressFun, LBFGSResult(..), lbfgs) where
 
 import Data.Array.Storable (StorableArray,
                             unsafeForeignPtrToStorableArray)
