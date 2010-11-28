@@ -108,13 +108,13 @@ data CLBFGSParameter = CLBFGSParameter {
       gtol :: CDouble,
       xtol :: CDouble,
       orthantwise_c :: CDouble,
-      orthantwise_start :: CDouble,
-      orthantwise_end :: CDouble
+      orthantwise_start :: CInt,
+      orthantwise_end :: CInt
 } deriving Show
 
 defaultCParam :: CLBFGSParameter
 defaultCParam = CLBFGSParameter 6 1e-5 0 1e-5 0 defaultLineSearch 40 1e-20
-                1e20 1e-4 0.9 0.9 1.0e-16 0.0 0.0 (-1.0)
+                1e20 1e-4 0.9 0.9 1.0e-16 0.0 0 (-1)
 
 instance Storable CLBFGSParameter where
     sizeOf _ = #{size lbfgs_parameter_t}

@@ -2,7 +2,8 @@
 -- distribution.
 
 import Data.Array.Storable (StorableArray, readArray, writeArray)
-import Numeric.LBFGS (LineSearchAlgorithm(..), LBFGSResult, lbfgs)
+import Numeric.LBFGS (LineSearchAlgorithm(..), LBFGSParameters(..),
+                      LBFGSResult, lbfgs)
 import Foreign.C.Types (CDouble, CInt)
 
 eval :: Double -> StorableArray Int CDouble -> StorableArray Int CDouble ->
@@ -40,7 +41,8 @@ test_init = concat $ take 50 $ repeat [-1.2, 1.0]
 test :: IO (LBFGSResult, [Double])
 test = do
   putStr "--- Starting optimization ---\n"
-  r <- lbfgs DefaultLineSearch eval progress 0.0 test_init
+  r <- lbfgs (LBFGSParameters DefaultLineSearch Nothing) eval progress 0.0
+       test_init
   putStr "--- Done ---\n"
   return r
 

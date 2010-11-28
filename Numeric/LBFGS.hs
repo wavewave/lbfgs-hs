@@ -15,10 +15,12 @@
 -- <http://www.chokkan.org/software/liblbfgs/>
 
 module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
-                      ProgressFun, LBFGSResult(..), lbfgs) where
+                      ProgressFun, LBFGSParameters(..), LBFGSResult(..),
+                      lbfgs) where
 
 import Data.Array.Storable (StorableArray,
                             unsafeForeignPtrToStorableArray)
+import Data.Maybe
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.ForeignPtr (newForeignPtr_)
 import Foreign.Marshal.Alloc (malloc, free)
@@ -36,6 +38,13 @@ import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
                          )
 
 -- |
+-- Parameters for the LBFGS minimization.
+data LBFGSParameters = LBFGSParameters LineSearchAlgorithm L1NormCoefficient
+
+-- | Coefficient for the L1 norm of variables.
+type L1NormCoefficient = Maybe Double
+
+-- |
 -- Various line search algorithms. Wolfe backtracking algorithms require
 -- a coefficient.
 data LineSearchAlgorithm = DefaultLineSearch
@@ -45,26 +54,36 @@ data LineSearchAlgorithm = DefaultLineSearch
                          | BacktrackingWolfe       {coeff :: Double }
                          | BacktrackingStrongWolfe {coeff :: Double }
 
-mergeLineSearchAlgorithm :: CLBFGSParameter -> LineSearchAlgorithm ->
+mergeLineSearchAlgorithm :: LineSearchAlgorithm -> CLBFGSParameter ->
                             CLBFGSParameter
-mergeLineSearchAlgorithm p DefaultLineSearch =
+mergeLineSearchAlgorithm DefaultLineSearch p =
     p {R.linesearch = R.defaultLineSearch}
-mergeLineSearchAlgorithm p MoreThuente =
+mergeLineSearchAlgorithm MoreThuente p =
     p { R.linesearch = R.moreThuente }
-mergeLineSearchAlgorithm p BacktrackingArmijo =
+mergeLineSearchAlgorithm BacktrackingArmijo p =
     p { R.linesearch = R.backtrackingArmijo }
-mergeLineSearchAlgorithm p Backtracking =
+mergeLineSearchAlgorithm Backtracking p =
     p { R.linesearch = R.backtracking }
-mergeLineSearchAlgorithm p (BacktrackingWolfe c) =
+mergeLineSearchAlgorithm (BacktrackingWolfe c) p =
     p { R.linesearch = R.backtrackingWolfe,
         R.wolfe      = realToFrac c }
-mergeLineSearchAlgorithm p (BacktrackingStrongWolfe c) =
+mergeLineSearchAlgorithm (BacktrackingStrongWolfe c) p =
     p { R.linesearch = R.backtrackingStrongWolfe,
         R.wolfe      = realToFrac c }
 
-withParam :: LineSearchAlgorithm -> CLBFGSParameter
-withParam lineSearch =
-    mergeLineSearchAlgorithm defaultCParam lineSearch
+mergeL1NormCoefficient :: L1NormCoefficient -> CInt -> CLBFGSParameter ->
+                          CLBFGSParameter
+mergeL1NormCoefficient Nothing _ p = p
+mergeL1NormCoefficient (Just l1) n p =
+    p { R.linesearch        = R.backtracking,
+        R.orthantwise_c     = realToFrac l1,
+        R.orthantwise_start = 0,
+        R.orthantwise_end   = n - 1 }
+
+withParam :: LBFGSParameters -> CInt -> CLBFGSParameter
+withParam (LBFGSParameters lineSearch l1NormCoeff) n =
+    mergeL1NormCoefficient l1NormCoeff n $ (mergeLineSearchAlgorithm lineSearch)
+                          defaultCParam 
 
 
 data LBFGSResult
@@ -230,20 +249,21 @@ wrapProgressFun fun inst x g fx xn gn step n k ls = do
 -- |
 -- Start a L-BFGS optimization. The initial variables should be
 -- provided as a list of doubles.
-lbfgs :: LineSearchAlgorithm       -- ^ The line search algorithm
+lbfgs :: LBFGSParameters           -- ^ Parameters
       -> EvaluateFun a             -- ^ Objective function
       -> ProgressFun a             -- ^ Progress report function
       -> a                         -- ^ Instance data
       -> [Double]                  -- ^ Initial variable values
       -> IO(LBFGSResult, [Double]) -- ^ Result and variable values
-lbfgs ls evalFun progressFun inst p = lbfgs_ ls (wrapEvaluateFun evalFun)
-                                 (wrapProgressFun progressFun) inst p
+lbfgs lbfgsParams evalFun progressFun inst p = lbfgs_ lbfgsParams
+                                               (wrapEvaluateFun evalFun)
+                                               (wrapProgressFun progressFun) inst p
 
-lbfgs_ :: LineSearchAlgorithm -> CEvaluateFun a -> CProgressFun a -> a ->
+lbfgs_ :: LBFGSParameters -> CEvaluateFun a -> CProgressFun a -> a ->
           [Double] -> IO(LBFGSResult, [Double])
-lbfgs_ ls evalFun progressFun inst p = do
+lbfgs_ lbfgsParams evalFun progressFun inst p = do
   (n, pVec) <- listToVector p
-  let param = withParam ls
+  let param = withParam lbfgsParams n
   instP <- newStablePtr inst
   paramP <- malloc
   poke paramP param
