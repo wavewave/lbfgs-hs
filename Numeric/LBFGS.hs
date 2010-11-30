@@ -39,7 +39,12 @@ import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
 
 -- |
 -- Parameters for the LBFGS minimization.
-data LBFGSParameters = LBFGSParameters LineSearchAlgorithm L1NormCoefficient
+data LBFGSParameters = LBFGSParameters {
+      lbfgsPast              :: Maybe Int,
+      lbfgsDelta             :: Double,
+      lbfgsLineSearch        :: LineSearchAlgorithm,
+      lbfgsL1NormCoefficient :: L1NormCoefficient
+}
 
 -- | Coefficient for the L1 norm of variables.
 type L1NormCoefficient = Maybe Double
@@ -80,11 +85,20 @@ mergeL1NormCoefficient (Just l1) n p =
         R.orthantwise_start = 0,
         R.orthantwise_end   = n - 1 }
 
-withParam :: LBFGSParameters -> CInt -> CLBFGSParameter
-withParam (LBFGSParameters lineSearch l1NormCoeff) n =
-    mergeL1NormCoefficient l1NormCoeff n $ (mergeLineSearchAlgorithm lineSearch)
-                          defaultCParam 
+mergePast :: Maybe Int -> Double -> CLBFGSParameter -> CLBFGSParameter
+mergePast Nothing           delta p = p { R.past = 0 }
+mergePast (Just iterations) delta p = p {
+                                        R.past  = fromIntegral iterations,
+                                        R.delta = realToFrac delta
+                                      }
 
+withParam :: LBFGSParameters -> CInt -> CLBFGSParameter
+withParam (LBFGSParameters past delta lineSearch l1NormCoeff) n =
+    mergeL1NormCoefficient l1NormCoeff n $ (mergeLineSearchAlgorithm lineSearch)
+                           $ mergePast past delta defaultCParam
+
+defaultLBFGSParameters :: LBFGSParameters
+defaultLBFGSParameters = LBFGSParameters Nothing 1e-5 DefaultLineSearch Nothing
 
 data LBFGSResult
     = Success
