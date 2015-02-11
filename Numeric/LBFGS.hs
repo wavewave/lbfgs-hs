@@ -18,8 +18,8 @@ module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
                       ProgressFun, LBFGSParameters(..), LBFGSResult(..),
                       lbfgs) where
 
-import Data.Array.Storable (StorableArray,
-                            unsafeForeignPtrToStorableArray)
+import Data.Array.Storable (StorableArray)
+import Data.Array.Unsafe (unsafeForeignPtrToStorableArray)
 import Data.Maybe
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.ForeignPtr (newForeignPtr_)
