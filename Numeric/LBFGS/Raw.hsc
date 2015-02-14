@@ -53,7 +53,7 @@ module Numeric.LBFGS.Raw (CLineSearchAlgorithm, CLBFGSParameter(..),
 ) where
 
 import Foreign.Storable (Storable(..))
-import Foreign.C.Types (CDouble, CInt)
+import Foreign.C.Types (CDouble(..), CInt(..))
 import Foreign.Ptr (FunPtr, Ptr)
 import Foreign.StablePtr (StablePtr)
 

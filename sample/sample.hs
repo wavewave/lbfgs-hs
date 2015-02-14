@@ -41,10 +41,16 @@ test_init = concat $ take 50 $ repeat [-1.2, 1.0]
 test :: IO (LBFGSResult, [Double])
 test = do
   putStr "--- Starting optimization ---\n"
-  r <- lbfgs (LBFGSParameters DefaultLineSearch Nothing) eval progress 0.0
-       test_init
+  r <- lbfgs params eval progress 0.0 test_init
   putStr "--- Done ---\n"
   return r
+      where
+        params = LBFGSParameters {
+                   lbfgsPast=Nothing,
+                   lbfgsDelta=0,
+                   lbfgsLineSearch=DefaultLineSearch,
+                   lbfgsL1NormCoefficient=Nothing
+                 }
 
 main :: IO ()
 main = do
