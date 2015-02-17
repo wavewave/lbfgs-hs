@@ -288,6 +288,6 @@ lbfgs_ lbfgsParams evalFun progressFun inst p = do
   freeHaskellFunPtr evalW
   free paramP
   freeStablePtr instP
-  freeVector pVec
   rl <- vectorToList n pVec
+  freeVector pVec
   return (deriveResult $ CLBFGSResult r, rl)
