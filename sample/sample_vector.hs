@@ -1,6 +1,7 @@
 import Data.Array.Storable (StorableArray, readArray, writeArray)
-import Numeric.LBFGS (LineSearchAlgorithm(..), LBFGSParameters(..),
-                      LBFGSResult, lbfgs)
+import Numeric.LBFGS.Vector
+         (LineSearchAlgorithm(..), LBFGSParameters(..),
+          LBFGSResult, lbfgs)
 
 import Foreign.C.Types (CDouble, CInt)
 

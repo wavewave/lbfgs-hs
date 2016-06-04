@@ -1,22 +1,21 @@
 -- |
--- Module      : Numeric.LBFGS
--- Copyright   : (c) 2010 Daniël de Kok
+-- Module      : Numeric.LBFGS.Vector
+-- Copyright   : (c) 2010 Daniël de Kok, 2016 Ian-Woo.Kim
 -- License     : Apache 2
 --
 --
 -- Maintainer  : Daniël de Kok <me@danieldk.eu>
 -- Stability   : experimental
 --
--- Binding for the liblbfgs library, much implements the Limited-memory
--- Broyden-Fletcher-Goldfarb-Shanno (L-BFGS) method for solving
--- unconstrained minimization problems. The original C library is
--- available from:
---
--- <http://www.chokkan.org/software/liblbfgs/>
 
-module Numeric.LBFGS (LineSearchAlgorithm(..), EvaluateFun,
-                      ProgressFun, LBFGSParameters(..), LBFGSResult(..),
-                      lbfgs) where
+module Numeric.LBFGS.Vector
+( LineSearchAlgorithm(..)
+, EvaluateFun
+, ProgressFun
+, LBFGSParameters(..)
+, LBFGSResult(..)
+, lbfgs
+) where
 
 import Data.Array.Storable (StorableArray)
 import Data.Array.Unsafe (unsafeForeignPtrToStorableArray)
@@ -45,6 +44,10 @@ withParam :: LBFGSParameters -> CInt -> CLBFGSParameter
 withParam (LBFGSParameters past delta lineSearch l1NormCoeff) n =
     mergeL1NormCoefficient l1NormCoeff n $ (mergeLineSearchAlgorithm lineSearch)
                            $ mergePast past delta defaultCParam
+
+defaultLBFGSParameters :: LBFGSParameters
+defaultLBFGSParameters = LBFGSParameters Nothing 1e-5 DefaultLineSearch Nothing
+
 
 
 cDoublePlusPtr :: Ptr CDouble -> Int -> Ptr CDouble
@@ -164,3 +167,4 @@ lbfgs_ lbfgsParams evalFun progressFun inst p = do
   rl <- vectorToList n pVec
   freeVector pVec
   return (deriveResult $ CLBFGSResult r, rl)
+
