@@ -17,8 +17,8 @@ module Numeric.LBFGS.Vector
 , lbfgs
 ) where
 
-import Data.Array.Storable (StorableArray)
-import Data.Array.Unsafe (unsafeForeignPtrToStorableArray)
+import Data.Vector.Storable.Mutable (IOVector)
+import qualified Data.Vector.Storable.Mutable as M
 import Data.Maybe
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.ForeignPtr (newForeignPtr_)
@@ -87,9 +87,9 @@ vectorToList_ pStart pCur l
 -- Type signature for the objective function and gradient evaluations.
 type EvaluateFun a =
     a                            -- ^ Instance data
-    -> StorableArray Int CDouble -- ^ Current variables (should not be
-                                 --   modified by the function)
-    -> StorableArray Int CDouble -- ^ Gradients
+    -> IOVector CDouble          -- ^ Current variables (should not be
+                                 --   modified by the function) -- previously, StorableArray Int CDouble
+    -> IOVector CDouble          -- ^ Gradients                 -- previously, StorableArray Int CDouble
     -> CInt                      -- ^ Number of variables
     -> CDouble                   -- ^ Step of the line search algorithm
     -> IO (CDouble)              -- ^ Value of the objective function
@@ -100,20 +100,20 @@ wrapEvaluateFun fun inst x g n step = do
   let nInt = fromIntegral n
   instV <- deRefStablePtr inst
   xFp <- newForeignPtr_ x
-  xArr <- unsafeForeignPtrToStorableArray xFp (0, nInt - 1)
+  let xVec = M.unsafeFromForeignPtr xFp 0 nInt
   gFp <- newForeignPtr_ g
-  gArr <- unsafeForeignPtrToStorableArray gFp (0, nInt - 1)
-  fun instV xArr gArr n step
+  let gVec = M.unsafeFromForeignPtr gFp 0 nInt
+  fun instV xVec gVec n step
 
 -- |
 -- Type signature for a function reporting on the progress of the
 -- optimization.
 type ProgressFun a =
     a                            -- ^ Instance data
-    -> StorableArray Int CDouble -- ^ Variables (should not be modified
-                                 --   by the function)
-    -> StorableArray Int CDouble -- ^ Gradients (should not be modified
-                                 --   by the function)
+    -> IOVector CDouble          -- ^ Variables (should not be modified
+                                 --   by the function) -- previously, StorableArray Int CDouble
+    -> IOVector CDouble          -- ^ Gradients (should not be modified
+                                 --   by the function) -- previously, StorableArray Int CDouble
     -> CDouble                   -- ^ Value of the objective function
     -> CDouble                   -- ^ Euclidean norm of the variables
     -> CDouble                   -- ^ Eucledian norm of the gradients
@@ -131,10 +131,11 @@ wrapProgressFun fun inst x g fx xn gn step n k ls = do
   let nInt = fromIntegral n
   instV <- deRefStablePtr inst
   xFp <- newForeignPtr_ x
-  xArr <- unsafeForeignPtrToStorableArray xFp (0, nInt - 1)
+  let xVec = M.unsafeFromForeignPtr xFp 0 nInt
   gFp <- newForeignPtr_ g
-  gArr <- unsafeForeignPtrToStorableArray gFp (0, nInt - 1)
-  fun instV xArr gArr fx xn gn step n k ls
+  let gVec = M.unsafeFromForeignPtr xFp 0 nInt
+  fun instV xVec gVec fx xn gn step n k ls
+  
 
 -- |
 -- Start a L-BFGS optimization. The initial variables should be
