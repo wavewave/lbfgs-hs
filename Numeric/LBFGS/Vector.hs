@@ -17,9 +17,8 @@ module Numeric.LBFGS.Vector
 , lbfgs
 ) where
 
-import Data.Vector.Storable.Mutable (MVector(..), IOVector) -- (StorableArray)
+import Data.Vector.Storable.Mutable (IOVector)
 import qualified Data.Vector.Storable.Mutable as M
--- import Data.Array.Unsafe (unsafeForeignPtrToStorableArray)
 import Data.Maybe
 import Foreign.C.Types (CDouble, CInt)
 import Foreign.ForeignPtr (newForeignPtr_)
@@ -101,12 +100,9 @@ wrapEvaluateFun fun inst x g n step = do
   let nInt = fromIntegral n
   instV <- deRefStablePtr inst
   xFp <- newForeignPtr_ x
-  -- xArr <- unsafeForeignPtrToStorableArray xFp (0, nInt - 1)
-  let xVec = MVector nInt xFp
+  let xVec = M.unsafeFromForeignPtr xFp 0 nInt
   gFp <- newForeignPtr_ g
-  -- gArr <- unsafeForeignPtrToStorableArray gFp (0, nInt - 1)
-  let gVec = MVector nInt gFp
-  -- fun instV xArr gArr n step
+  let gVec = M.unsafeFromForeignPtr gFp 0 nInt
   fun instV xVec gVec n step
 
 -- |
@@ -135,12 +131,9 @@ wrapProgressFun fun inst x g fx xn gn step n k ls = do
   let nInt = fromIntegral n
   instV <- deRefStablePtr inst
   xFp <- newForeignPtr_ x
-  let xVec = MVector nInt xFp
-  -- xArr <- unsafeForeignPtrToStorableArray xFp (0, nInt - 1)
+  let xVec = M.unsafeFromForeignPtr xFp 0 nInt
   gFp <- newForeignPtr_ g
-  -- gArr <- unsafeForeignPtrToStorableArray gFp (0, nInt - 1)
-  let gVec = MVector nInt gFp
-  -- fun instV xArr gArr fx xn gn step n k ls
+  let gVec = M.unsafeFromForeignPtr xFp 0 nInt
   fun instV xVec gVec fx xn gn step n k ls
   
 
