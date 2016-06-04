@@ -20,7 +20,9 @@ Library
                         Numeric.LBFGS
                         Numeric.LBFGS.Raw
                         Numeric.LBFGS.Types
-                        Numeric.LBFGS.Vector            
+                        Numeric.LBFGS.Vector
+  Other-modules:
+                        Numeric.LBFGS.Internal
                   
   C-Sources:            cbits/lbfgs.c
   Include-Dirs:         cbits

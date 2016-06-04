@@ -15,12 +15,8 @@ module Numeric.LBFGS.Types
 , L1NormCoefficient
 ) where
 
-
-
-
 -- | Coefficient for the L1 norm of variables.
 type L1NormCoefficient = Maybe Double
-
 
 -- |
 -- Various line search algorithms. Wolfe backtracking algorithms require
@@ -77,4 +73,8 @@ data LBFGSResult
     | InvalidParameters
     | IncreaseGradient
     deriving (Eq, Show)
+
+defaultLBFGSParameters :: LBFGSParameters
+defaultLBFGSParameters = LBFGSParameters Nothing 1e-5 DefaultLineSearch Nothing
+
 
