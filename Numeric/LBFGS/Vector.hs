@@ -8,9 +8,14 @@
 -- Stability   : experimental
 --
 
-module Numeric.LBFGS.Vector (LineSearchAlgorithm(..), EvaluateFun,
-                             ProgressFun, LBFGSParameters(..), LBFGSResult(..),
-                             lbfgs) where
+module Numeric.LBFGS.Vector
+( LineSearchAlgorithm(..)
+, EvaluateFun
+, ProgressFun
+, LBFGSParameters(..)
+, LBFGSResult(..)
+, lbfgs
+) where
 
 import Data.Array.Storable (StorableArray)
 import Data.Array.Unsafe (unsafeForeignPtrToStorableArray)
@@ -30,28 +35,8 @@ import Numeric.LBFGS.Raw (CEvaluateFun, CProgressFun, CLBFGSParameter(..),
                           c_lbfgs_evaluate_t_wrap, c_lbfgs_progress_t_wrap,
                           c_lbfgs
                          )
+import Numeric.LBFGS.Types
 
--- |
--- Parameters for the LBFGS minimization.
-data LBFGSParameters = LBFGSParameters {
-      lbfgsPast              :: Maybe Int,
-      lbfgsDelta             :: Double,
-      lbfgsLineSearch        :: LineSearchAlgorithm,
-      lbfgsL1NormCoefficient :: L1NormCoefficient
-}
-
--- | Coefficient for the L1 norm of variables.
-type L1NormCoefficient = Maybe Double
-
--- |
--- Various line search algorithms. Wolfe backtracking algorithms require
--- a coefficient.
-data LineSearchAlgorithm = DefaultLineSearch
-                         | MoreThuente
-                         | BacktrackingArmijo
-                         | Backtracking
-                         | BacktrackingWolfe       {coeff :: Double }
-                         | BacktrackingStrongWolfe {coeff :: Double }
 
 mergeLineSearchAlgorithm :: LineSearchAlgorithm -> CLBFGSParameter ->
                             CLBFGSParameter
@@ -94,42 +79,6 @@ withParam (LBFGSParameters past delta lineSearch l1NormCoeff) n =
 defaultLBFGSParameters :: LBFGSParameters
 defaultLBFGSParameters = LBFGSParameters Nothing 1e-5 DefaultLineSearch Nothing
 
-data LBFGSResult
-    = Success
-    | Stop
-    | AlreadyMinimized
-    | UnknownError
-    | LogicError
-    | OutOfMemory
-    | Canceled
-    | InvalidN
-    | InvalidNSSE
-    | InvalidXSSE
-    | InvalidEpsilon
-    | InvalidTestPeriod
-    | InvalidDelta
-    | InvalidLineSearch
-    | InvalidMinStep
-    | InvalidMaxStep
-    | InvalidFtol
-    | InvalidWolfe
-    | InvalidGtol
-    | InvalidXtol
-    | InvalidMaxLineSearch
-    | InvalidOrthantwise
-    | InvalidOrthantwiseStart
-    | InvalidOrthantwiseEnd
-    | OutOfInterval
-    | IncorrectTMinMax
-    | RoundingError
-    | MinimumStep
-    | MaximumStep
-    | MaximumLineSearch
-    | MaximumIteration
-    | WidthTooSmall
-    | InvalidParameters
-    | IncreaseGradient
-    deriving (Eq, Show)
 
 deriveResult :: CLBFGSResult -> LBFGSResult
 deriveResult r

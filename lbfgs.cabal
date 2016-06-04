@@ -19,6 +19,7 @@ Library
   Exposed-modules:
                         Numeric.LBFGS
                         Numeric.LBFGS.Raw
+                        Numeric.LBFGS.Types
                         Numeric.LBFGS.Vector            
                   
   C-Sources:            cbits/lbfgs.c
