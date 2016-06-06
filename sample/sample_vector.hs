@@ -13,14 +13,6 @@ import Foreign.C.Types (CDouble, CInt)
 import Control.Lens (view, _1,_2,_3 )
 
 --
--- data StorableArray (index type) (value type)
---
--- StorableArray is mutable array.
--- mutable read and write can be done using readArray, writeArray.
--- Note that readArray/writeArray are IO actions.
---
-
---
 -- objective function here is f(x) = Sum_(k=0)^50 ( (1-x[2k])^2 + 10^2 (x[2k+1] - x[2k]^2)^2 )
 --
 eval :: Double -> IOVector CDouble -> IOVector CDouble -> CInt -> CDouble -> IO (CDouble)
