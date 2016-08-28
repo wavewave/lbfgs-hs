@@ -1,9 +1,9 @@
 Name:               lbfgs
-Version:            0.0.5
+Version:            0.1
 License:            OtherLicense
 License-File:       LICENSE
 Copyright:          Daniël de Kok
-Maintainer:         Daniël de Kok <me@danieldk.eu>
+Maintainer:         Daniël de Kok <me@danieldk.eu>, Ian-Woo Kim <ianwookim@gmail.com>
 Author:             Daniël de Kok <me@danieldk.eu>
 Category:           Numeric
 Synopsis:           L-BFGS optimization
