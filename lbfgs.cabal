@@ -32,4 +32,4 @@ Library
                   
   C-Sources:            cbits/lbfgs.c
   Include-Dirs:         cbits
-  Includes:             lbfgs.h, arithmetic_ansi.h
+  Includes:             lbfgs.h
