@@ -17,7 +17,12 @@ Extra-Source-Files: cbits/arithmetic_ansi.h cbits/arithmetic_sse_double.h
 Source-Repository HEAD
   Type:     git
   Location: git://github.com/wavewave/lbfgs-hs.git
-                    
+
+Flag system-liblbfgs
+  Description: Use system provided liblbfgs instead of bundled one
+  Manual: True
+  Default: False
+
 Library
   Build-Depends:        base >= 4 && < 5,
                         array >= 0.3.0.0,
@@ -29,7 +34,10 @@ Library
                         Numeric.LBFGS.Vector
   Other-modules:
                         Numeric.LBFGS.Internal
-                  
-  C-Sources:            cbits/lbfgs.c
-  Include-Dirs:         cbits
+
+  if flag(system-liblbfgs)
+    Extra-libraries:    lbfgs
+  else
+    C-Sources:          cbits/lbfgs.c
+    Include-Dirs:       cbits
   Includes:             lbfgs.h
